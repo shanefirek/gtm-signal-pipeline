@@ -75,7 +75,9 @@ GET / ──> dashboard: live state machine view, trace IDs, reaper stats
 
 ## Iteration log
 
-- (entries appended at each gate)
+### P0 gate observation — 2026-06-09 22:04 EDT
+Smoke green on first full run (8/8 assertions): healthz 200, valid POST 202 w/ signal_id+trace_id, duplicate 409, malformed 400, unknown source 400, signal routed within 10s via local queue consumer, dashboard 200 w/ reasons rendered. tsc clean. Local D1 + local queues via wrangler dev (port 8899 — 8787 occupied by another local worker).
+Retro: (1) wrangler types generates literal types from vars — flag() coercion helper needed. (2) Local queues just work in wrangler dev. (3) Inbox-first made the smoke trivially deterministic — the DB is queryable at every stage.
 
 ### P1 gate observation — 2026-06-09 22:07 EDT
 Smoke green 15/15 incl. new fixtures: hot fixture (form_fill, VP title, 900 headcount, /pricing, demo_request) → fit 100 / intent 100 → hot/alert_rep w/ component-level reason; junk fixture (anon /blog visit) → archive. Added GET /api/signal?trace_id= JSON inspection endpoint (replaces brittle HTML grep in smoke). scored_by='deterministic'.
