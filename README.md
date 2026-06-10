@@ -61,7 +61,8 @@ Every pattern below exists because a production failure taught it to me. The thi
 | **Two-dimension scoring** | Fit alone is a list. Intent alone is noise. | `fit` (does the org look like a buyer) and `intent` (does the behavior look like buying) are scored independently. The hot tier requires both. |
 | **Reasons, always** | "Blocked by gate" without naming the gate costs you hours at midnight | `policy.ts` returns `{ tier, action, reason }`. Routing without a reason is structurally impossible. |
 | **Trace threading** | Debugging a pipeline without correlation IDs is archaeology | `trace_id` minted at ingest, threaded through queue, scoring, and routing. Every log line is structured JSON. |
-| **Smoke as the gate** | "It works" is not a claim that survives a deploy | `scripts/smoke.sh`: 15 mechanical assertions against a running instance. Exit 0 or it does not ship. |
+| **Hostile-input posture** | An open ingest endpoint means every payload field is attacker-controlled, all the way to the pixels | Body size cap (413 past 8KB), source allowlist, and HTML escaping at render: payload strings reach the dashboard escaped, never raw. The smoke suite fires an actual XSS payload and asserts it lands inert. |
+| **Smoke as the gate** | "It works" is not a claim that survives a deploy | `scripts/smoke.sh`: 18 mechanical assertions against a running instance. Exit 0 or it does not ship. |
 
 ## What is deliberately not here
 
@@ -80,7 +81,7 @@ The defer column is the architect's audit trail of saying no.
 npm install
 npm run db:local        # apply schema to local D1
 npm run dev             # wrangler dev with local D1 + Queues + cron
-npm run smoke           # 15 assertions, exit 0 = green
+npm run smoke           # 18 assertions, exit 0 = green
 ```
 
 The AI path is off by default (`AI_SCORING_ENABLED=false`). Enable it with `wrangler dev --var AI_SCORING_ENABLED:true`. Force the fallback with `--var AI_MODEL:bogus` and watch `scored_by` tell the truth.

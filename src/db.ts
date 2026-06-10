@@ -43,8 +43,9 @@ export async function insertSignal(
   }
 }
 
-// Atomic claim: exactly one consumer wins. The WHERE status='pending' guard
-// makes the race impossible at the DB level — no locks, no coordination.
+// Atomic claim: exactly one consumer wins. D1 serializes writes at a single
+// primary, so the WHERE status='pending' guard guarantees one winner per
+// claim attempt — no app-level locks needed.
 export async function claimSignal(db: D1Database, id: number): Promise<SignalRow | null> {
   return db
     .prepare(

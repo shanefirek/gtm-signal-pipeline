@@ -89,3 +89,12 @@ Retro: zod parse + one feedback retry + fallback = the whole ai-output trust-tie
 
 ### P3 gate observation (local half) — 2026-06-09 22:18 EDT
 README written as the public-facing patterns audit (11 patterns w/ why + enforcement columns, defer section as saying-no audit trail, try-it curls). Dashboard: added fire-a-test-signal snippet w/ origin injection, em-dash scrub for external-artifact rule. tsc clean, smoke 15/15 green post-changes. REMAINING (Shane's actions — live ops): wrangler d1 create + paste database_id, queues create ×2, db:remote, deploy, custom domain route, GitHub repo create+push, production smoke, DM send.
+
+### P4 — Adversarial audit hardening — 2026-06-10 ~06:50 EDT
+Post-deploy audit pass (independent adversarial code review + best-practices sweep) before the artifact goes in front of a technical reviewer. Findings fixed:
+1. **Stored XSS (critical):** payload fields (title/page/action) flowed verbatim through scoring reasons into dashboard HTML. Fix: `esc()` HTML-escape at render on every payload-derived cell. Smoke now fires a real hot-tier XSS fixture and asserts the markup lands escaped, never raw.
+2. **No body size cap:** open endpoint accepted unbounded JSON into D1. Fix: Content-Length fast-reject + post-read length check, 413 past 8KB.
+3. **Overclaimed comment:** "race impossible at the DB level" softened to name the actual mechanism (D1 serializes writes at a single primary) — precision matters when the reviewer works at Cloudflare.
+4. **Stale schema comment:** removed 'stub' from scored_by enum comment (P1 removed that path).
+Gate: tsc clean, smoke 18/18 green locally (15 prior + 413 + raw-absent + escaped-present). Also verified: full git history clean of secrets, .dev.vars/.wrangler ignored, config carries compatibility_date 2026-06-09 + nodejs_compat + observability head_sampling_rate 1.
+Retro: (1) The XSS assertion failed on first run because the archive-tier reason omits component detail — the hostile string never reached the page; the fixture had to be hot-tier to actually exercise the sink. A security assertion that doesn't reach the sink is a false green. (2) An open ingest endpoint makes every payload field hostile all the way to the pixels — escape at render, not at ingest, so the stored payload stays a faithful snapshot. (3) "Deliberately unauthenticated" is a defensible defer only if the blast radius of unauthenticated input is bounded: size cap + allowlist + escaping is what bounds it.

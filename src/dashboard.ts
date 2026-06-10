@@ -2,6 +2,17 @@
 
 import { getDashboardData } from "./db";
 
+// The ingest endpoint is open by design, so every payload-derived string
+// (title/page/action flow into scoring reasons) is hostile until escaped.
+function esc(value: string): string {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
 export async function renderDashboard(env: Env, origin: string): Promise<Response> {
   const data = await getDashboardData(env.DB);
 
@@ -9,12 +20,12 @@ export async function renderDashboard(env: Env, origin: string): Promise<Respons
     .map(
       (s) => `<tr>
         <td>${s.id}</td>
-        <td><code>${s.trace_id.slice(0, 8)}</code></td>
-        <td>${s.source}</td>
+        <td><code>${esc(s.trace_id.slice(0, 8))}</code></td>
+        <td>${esc(s.source)}</td>
         <td class="st-${s.status}">${s.status}</td>
         <td>${s.fit_score ?? "—"}</td>
         <td>${s.intent_score ?? "—"}</td>
-        <td>${s.scored_by ?? "—"}</td>
+        <td>${esc(s.scored_by ?? "—")}</td>
         <td>${s.reap_count > 0 ? `♻️ ${s.reap_count}` : ""}</td>
       </tr>`,
     )
@@ -25,8 +36,8 @@ export async function renderDashboard(env: Env, origin: string): Promise<Respons
       (a) => `<tr>
         <td>${a.signal_id}</td>
         <td class="tier-${a.tier}">${a.tier}</td>
-        <td>${a.action}</td>
-        <td class="reason">${a.reason}</td>
+        <td>${esc(a.action)}</td>
+        <td class="reason">${esc(a.reason)}</td>
       </tr>`,
     )
     .join("");

@@ -113,6 +113,24 @@ echo "== 10. routed action carries a non-empty reason =="
 REASON=$(field "$HOT_TRACE" action.reason)
 [[ -n "$REASON" && "$REASON" != "None" ]] && echo "  PASS: reason present (${REASON:0:60}...)" || { echo "  FAIL: empty reason"; FAILURES=$((FAILURES+1)); }
 
+echo "== 11. oversized body rejected (413) =="
+BIG=$(python3 -c "import json; print(json.dumps({'source':'webhook','filler':'x'*9000}))")
+CODE=$(curl -s -o /dev/null -w "%{http_code}" -X POST "$BASE/signal" \
+  -H "content-type: application/json" -d "$BIG")
+assert "9KB body returns 413" "413" "$CODE"
+
+echo "== 12. hostile payload renders escaped on dashboard (no stored XSS) =="
+NONCE=$(date +%s%N)
+# Hot-tier fixture: hot reasons quote the title component, so the hostile
+# string is guaranteed to reach the rendered dashboard.
+XSS=$(curl -s -X POST "$BASE/signal" -H "content-type: application/json" \
+  -d "{\"source\":\"form_fill\",\"company\":\"EvilCo\",\"domain\":\"evil.example\",\"title\":\"VP <img src=x onerror=alert(1)>\",\"employee_count\":900,\"page\":\"/pricing\",\"action\":\"demo_request\",\"nonce\":\"$NONCE\"}")
+XSS_TRACE=$(echo "$XSS" | python3 -c "import sys,json; print(json.load(sys.stdin)['trace_id'])")
+wait_routed "$XSS_TRACE" || { echo "  FAIL: xss fixture never routed"; FAILURES=$((FAILURES+1)); }
+DASH=$(curl -s "$BASE/")
+echo "$DASH" | grep -q '<img src=x' && { echo "  FAIL: raw <img injected into dashboard"; FAILURES=$((FAILURES+1)); } || echo "  PASS: hostile markup not present raw"
+echo "$DASH" | grep -q '&lt;img src=x' && echo "  PASS: hostile markup present escaped" || { echo "  FAIL: escaped form missing"; FAILURES=$((FAILURES+1)); }
+
 echo ""
 if [[ $FAILURES -eq 0 ]]; then
   echo "SMOKE GREEN ($(date))"

@@ -12,7 +12,7 @@ CREATE TABLE IF NOT EXISTS signals (
   fit_score    INTEGER,                       -- 0-100, org-structure-to-buy
   intent_score INTEGER,                       -- 0-100, behavior-says-they-will
   reasoning    TEXT,                          -- the why-now payload, frozen at scoring time
-  scored_by    TEXT,                          -- 'stub' | 'deterministic' | 'ai:<model>' | 'deterministic-fallback'
+  scored_by    TEXT,                          -- 'deterministic' | 'ai:<model>' | 'deterministic-fallback'
   claimed_at   TEXT,                          -- set by atomic claim; reaper compares against TTL
   routed_at    TEXT,
   reap_count   INTEGER NOT NULL DEFAULT 0,    -- times the reaper rescued this row

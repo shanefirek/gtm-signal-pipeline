@@ -34,10 +34,21 @@ export async function ingestSignal(
 ): Promise<IngestResult> {
   const traceId = crypto.randomUUID();
 
-  // Boundary validation — reject early, with structure
+  // Boundary validation — reject early, with structure.
+  // Content-Length fast-reject avoids buffering large bodies; the post-read
+  // length check covers chunked bodies where the header is absent or lies.
+  const MAX_BODY_BYTES = 8192;
+  const declared = Number(request.headers.get("content-length"));
+  if (declared > MAX_BODY_BYTES) {
+    return { status: 413, body: { error: `body exceeds ${MAX_BODY_BYTES} bytes`, trace_id: traceId } };
+  }
   let payload: SignalPayload;
   try {
-    payload = await request.json<SignalPayload>();
+    const text = await request.text();
+    if (text.length > MAX_BODY_BYTES) {
+      return { status: 413, body: { error: `body exceeds ${MAX_BODY_BYTES} bytes`, trace_id: traceId } };
+    }
+    payload = JSON.parse(text) as SignalPayload;
   } catch {
     return { status: 400, body: { error: "invalid JSON body", trace_id: traceId } };
   }
