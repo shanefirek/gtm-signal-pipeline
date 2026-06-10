@@ -21,7 +21,7 @@
     {
       "binding": "DB",
       "database_name": "gtm-signal-pipeline",
-      "database_id": "placeholder-set-on-deploy"
+      "database_id": "04c73c91-b039-4f4e-9a5b-88d342c797a0"
     }
   ],
   "queues": {
@@ -44,6 +44,9 @@
   "ai": {
     "binding": "AI"
   },
+  "routes": [
+    { "pattern": "gtm-pipeline.shanefirek.com", "custom_domain": true }
+  ],
   "triggers": {
     "crons": ["*/5 * * * *"]
   }
