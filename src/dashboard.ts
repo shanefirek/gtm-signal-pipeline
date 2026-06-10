@@ -95,7 +95,13 @@ ${actionRows || "<tr><td colspan=4>none yet</td></tr>"}
   The queue is a notifier. The database is the source of truth.
   <a href="https://github.com/shanefirek/gtm-signal-pipeline">patterns writeup + source</a> · <a href="https://github.com/shanefirek">github.com/shanefirek</a>
 </footer>
-<script>setTimeout(() => location.reload(), 5000)</script>
+<script>
+  // The 5s auto-refresh resets <details> to closed — persist its state across reloads.
+  const d = document.querySelector("details");
+  if (sessionStorage.getItem("curl-open") === "1") d.open = true;
+  d.addEventListener("toggle", () => sessionStorage.setItem("curl-open", d.open ? "1" : "0"));
+  setTimeout(() => location.reload(), 5000);
+</script>
 </body>
 </html>`;
 
