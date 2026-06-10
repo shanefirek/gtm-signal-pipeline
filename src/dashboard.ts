@@ -82,7 +82,7 @@ ${actionRows || "<tr><td colspan=4>none yet</td></tr>"}
 </table>
 <footer>
   The queue is a notifier. The database is the source of truth.
-  <a href="https://github.com/shanefirek">github.com/shanefirek</a>
+  <a href="https://github.com/shanefirek/gtm-signal-pipeline">patterns writeup + source</a> · <a href="https://github.com/shanefirek">github.com/shanefirek</a>
 </footer>
 <script>setTimeout(() => location.reload(), 5000)</script>
 </body>
