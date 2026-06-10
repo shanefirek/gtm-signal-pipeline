@@ -2,7 +2,7 @@
 
 import { getDashboardData } from "./db";
 
-export async function renderDashboard(env: Env): Promise<Response> {
+export async function renderDashboard(env: Env, origin: string): Promise<Response> {
   const data = await getDashboardData(env.DB);
 
   const rows = data.recent
@@ -56,6 +56,13 @@ export async function renderDashboard(env: Env): Promise<Response> {
 <body>
 <h1>GTM Signal Pipeline</h1>
 <p>Inbox-first ingest → atomic claim → fit×intent scoring → routed with reasons. Reapers sweep every 5 min. Running on Workers + D1 + Queues.</p>
+<details>
+<summary>Fire a test signal</summary>
+<pre>curl -X POST ${origin}/signal \\
+  -H "content-type: application/json" \\
+  -d '{"source":"form_fill","company":"Acme","domain":"acme.com","title":"VP of IT","employee_count":900,"page":"/pricing","action":"demo_request"}'</pre>
+<p>Watch it walk pending → in_flight → routed below. Identical payloads dedup (409). Junk signals route to archive with the reason spelled out.</p>
+</details>
 <div class="counts">
   <div class="count"><b>${data.counts["pending"] ?? 0}</b> pending</div>
   <div class="count"><b>${data.counts["in_flight"] ?? 0}</b> in flight</div>
@@ -74,7 +81,7 @@ ${rows || "<tr><td colspan=8>no signals yet — POST /signal to begin</td></tr>"
 ${actionRows || "<tr><td colspan=4>none yet</td></tr>"}
 </table>
 <footer>
-  The queue is a notifier — the database is the source of truth.
+  The queue is a notifier. The database is the source of truth.
   <a href="https://github.com/shanefirek">github.com/shanefirek</a>
 </footer>
 <script>setTimeout(() => location.reload(), 5000)</script>

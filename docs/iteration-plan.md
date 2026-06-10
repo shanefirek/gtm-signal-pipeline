@@ -86,3 +86,6 @@ Retro: component-array scoring (points + why per component) made the reason fiel
 ### P2 gate observation — 2026-06-09 22:16 EDT
 Three-leg gate green: (1) smoke 15/15 with AI_SCORING_ENABLED=false (deterministic). (2) Forced failure via --var AI_MODEL:bogus → aiScore threw, fallback engaged, signal routed hot, scored_by='deterministic-fallback' — signal never died. (3) Real path via --var AI_SCORING_ENABLED:true → llama-3.1-8b scored fit 50 / intent 80, zod-validated, routed warm, scored_by='ai:@cf/meta/llama-3.1-8b-instruct'.
 Retro: zod parse + one feedback retry + fallback = the whole ai-output trust-tier pattern in ~40 lines. The scored_by column is doing the snapshot-discipline work — you can always tell which brain scored a row.
+
+### P3 gate observation (local half) — 2026-06-09 22:18 EDT
+README written as the public-facing patterns audit (11 patterns w/ why + enforcement columns, defer section as saying-no audit trail, try-it curls). Dashboard: added fire-a-test-signal snippet w/ origin injection, em-dash scrub for external-artifact rule. tsc clean, smoke 15/15 green post-changes. REMAINING (Shane's actions — live ops): wrangler d1 create + paste database_id, queues create ×2, db:remote, deploy, custom domain route, GitHub repo create+push, production smoke, DM send.

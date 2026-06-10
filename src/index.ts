@@ -52,7 +52,7 @@ export default {
     }
 
     if (url.pathname === "/" && request.method === "GET") {
-      return renderDashboard(env);
+      return renderDashboard(env, url.origin);
     }
 
     return Response.json({ error: "not found" }, { status: 404 });
