@@ -12,6 +12,7 @@
     // Kill switches — three levels (configuration tier 1)
     "PIPELINE_ENABLED": "true",
     "AI_SCORING_ENABLED": "false",
+    "AI_MODEL": "@cf/meta/llama-3.1-8b-instruct",
     "DRY_RUN": "false",
     // Reaper TTL — minutes before an in_flight claim is considered stale
     "CLAIM_TTL_MINUTES": "5"

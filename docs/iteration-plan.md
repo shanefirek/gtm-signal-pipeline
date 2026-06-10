@@ -82,3 +82,7 @@ Retro: (1) wrangler types generates literal types from vars — flag() coercion 
 ### P1 gate observation — 2026-06-09 22:07 EDT
 Smoke green 15/15 incl. new fixtures: hot fixture (form_fill, VP title, 900 headcount, /pricing, demo_request) → fit 100 / intent 100 → hot/alert_rep w/ component-level reason; junk fixture (anon /blog visit) → archive. Added GET /api/signal?trace_id= JSON inspection endpoint (replaces brittle HTML grep in smoke). scored_by='deterministic'.
 Retro: component-array scoring (points + why per component) made the reason field free — the reasoning IS the score computation, no separate explanation step.
+
+### P2 gate observation — 2026-06-09 22:16 EDT
+Three-leg gate green: (1) smoke 15/15 with AI_SCORING_ENABLED=false (deterministic). (2) Forced failure via --var AI_MODEL:bogus → aiScore threw, fallback engaged, signal routed hot, scored_by='deterministic-fallback' — signal never died. (3) Real path via --var AI_SCORING_ENABLED:true → llama-3.1-8b scored fit 50 / intent 80, zod-validated, routed warm, scored_by='ai:@cf/meta/llama-3.1-8b-instruct'.
+Retro: zod parse + one feedback retry + fallback = the whole ai-output trust-tier pattern in ~40 lines. The scored_by column is doing the snapshot-discipline work — you can always tell which brain scored a row.
