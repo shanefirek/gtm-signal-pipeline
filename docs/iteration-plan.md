@@ -76,3 +76,7 @@ GET / ──> dashboard: live state machine view, trace IDs, reaper stats
 ## Iteration log
 
 - (entries appended at each gate)
+
+### P1 gate observation — 2026-06-09 22:07 EDT
+Smoke green 15/15 incl. new fixtures: hot fixture (form_fill, VP title, 900 headcount, /pricing, demo_request) → fit 100 / intent 100 → hot/alert_rep w/ component-level reason; junk fixture (anon /blog visit) → archive. Added GET /api/signal?trace_id= JSON inspection endpoint (replaces brittle HTML grep in smoke). scored_by='deterministic'.
+Retro: component-array scoring (points + why per component) made the reason field free — the reasoning IS the score computation, no separate explanation step.

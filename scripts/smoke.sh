@@ -64,6 +64,55 @@ assert "GET / returns 200" "200" "$CODE"
 REASON=$(curl -s "$BASE/" | grep -c "reason" || true)
 [[ "$REASON" -gt 0 ]] && echo "  PASS: routed actions carry reasons" || { echo "  FAIL: no reason column found"; FAILURES=$((FAILURES+1)); }
 
+# ---------- P1: real deterministic scoring ----------
+
+wait_routed() {
+  local trace="$1"
+  for _ in $(seq 1 10); do
+    sleep 1
+    local st
+    st=$(curl -s "$BASE/api/signal?trace_id=$trace" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d['signal']['status'] if d.get('signal') else 'missing')" 2>/dev/null)
+    if [[ "$st" == "routed" ]]; then return 0; fi
+  done
+  return 1
+}
+
+field() {
+  local trace="$1" path="$2"
+  curl -s "$BASE/api/signal?trace_id=$trace" | python3 -c "
+import sys, json
+d = json.load(sys.stdin)
+obj, key = '$path'.split('.')
+v = (d.get(obj) or {}).get(key)
+print(v)"
+}
+
+echo "== 8. hot fixture routes hot + alert_rep =="
+NONCE=$(date +%s%N)
+HOT=$(curl -s -X POST "$BASE/signal" -H "content-type: application/json" \
+  -d "{\"source\":\"form_fill\",\"company\":\"BigCo\",\"domain\":\"bigco.com\",\"title\":\"VP of IT\",\"employee_count\":900,\"page\":\"/pricing\",\"action\":\"demo_request\",\"nonce\":\"$NONCE\"}")
+HOT_TRACE=$(echo "$HOT" | python3 -c "import sys,json; print(json.load(sys.stdin)['trace_id'])")
+wait_routed "$HOT_TRACE" || { echo "  FAIL: hot fixture never routed"; FAILURES=$((FAILURES+1)); }
+assert "hot fixture tier" "hot" "$(field "$HOT_TRACE" action.tier)"
+assert "hot fixture action" "alert_rep" "$(field "$HOT_TRACE" action.action)"
+assert "hot fixture scored deterministically" "deterministic" "$(field "$HOT_TRACE" signal.scored_by)"
+FIT=$(field "$HOT_TRACE" signal.fit_score)
+INTENT=$(field "$HOT_TRACE" signal.intent_score)
+[[ "$FIT" -ge 70 && "$FIT" -le 100 ]] && echo "  PASS: fit $FIT in [70,100]" || { echo "  FAIL: fit $FIT out of bounds"; FAILURES=$((FAILURES+1)); }
+[[ "$INTENT" -ge 70 && "$INTENT" -le 100 ]] && echo "  PASS: intent $INTENT in [70,100]" || { echo "  FAIL: intent $INTENT out of bounds"; FAILURES=$((FAILURES+1)); }
+
+echo "== 9. junk fixture routes archive =="
+NONCE=$(date +%s%N)
+COLD=$(curl -s -X POST "$BASE/signal" -H "content-type: application/json" \
+  -d "{\"source\":\"website_visit\",\"page\":\"/blog/some-post\",\"nonce\":\"$NONCE\"}")
+COLD_TRACE=$(echo "$COLD" | python3 -c "import sys,json; print(json.load(sys.stdin)['trace_id'])")
+wait_routed "$COLD_TRACE" || { echo "  FAIL: cold fixture never routed"; FAILURES=$((FAILURES+1)); }
+assert "junk fixture tier" "archive" "$(field "$COLD_TRACE" action.tier)"
+
+echo "== 10. routed action carries a non-empty reason =="
+REASON=$(field "$HOT_TRACE" action.reason)
+[[ -n "$REASON" && "$REASON" != "None" ]] && echo "  PASS: reason present (${REASON:0:60}...)" || { echo "  FAIL: empty reason"; FAILURES=$((FAILURES+1)); }
+
 echo ""
 if [[ $FAILURES -eq 0 ]]; then
   echo "SMOKE GREEN ($(date))"

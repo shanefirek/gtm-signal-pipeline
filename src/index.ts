@@ -38,6 +38,19 @@ export default {
       return Response.json(result.body, { status: result.status });
     }
 
+    if (url.pathname === "/api/signal" && request.method === "GET") {
+      // Inspect one signal + its routed action by trace_id — smoke + debugging surface
+      const traceId = url.searchParams.get("trace_id");
+      if (!traceId) return Response.json({ error: "trace_id required" }, { status: 400 });
+      const signal = await env.DB.prepare("SELECT * FROM signals WHERE trace_id=?")
+        .bind(traceId)
+        .first();
+      const action = await env.DB.prepare("SELECT * FROM routed_actions WHERE trace_id=?")
+        .bind(traceId)
+        .first();
+      return Response.json({ signal, action });
+    }
+
     if (url.pathname === "/" && request.method === "GET") {
       return renderDashboard(env);
     }
