@@ -6,24 +6,18 @@ This is the production pattern I run for real GTM systems, miniaturized onto a s
 
 **Live demo:** `https://gtm-pipeline.shanefirek.com` (POST a signal, watch it walk the state machine)
 
-```
-POST /signal ──> D1 signals table (raw payload, content-hash dedup, status=pending)
-                       │  queue notify {id, trace_id}
-                       ▼
-Queue consumer ──> atomic claim (UPDATE..RETURNING: pending → in_flight)
-                       │
-                       ▼
-                 scoring: fit × intent
-                 (Workers AI, zod-validated, deterministic fallback)
-                       │
-                       ▼
-                 policy.shouldRoute() → { tier, action, reason }
-                       │
-                       ▼
-                 routed_actions row, status=routed
-
-Cron (*/5) ──> reaper: anything stuck in_flight past TTL → pending, re-enqueued
-GET /      ──> dashboard: the state machine, live
+```mermaid
+flowchart TD
+    POST["POST /signal"] --> INBOX[("D1 signals table<br/>raw payload · content-hash dedup · status=pending")]
+    INBOX -->|"queue notify: id + trace_id only"| Q["Queue consumer"]
+    Q --> CLAIM{"atomic claim<br/>UPDATE..RETURNING<br/>pending → in_flight"}
+    CLAIM --> AI["scoring: fit × intent<br/>Workers AI, zod-validated"]
+    AI -->|"schema fails"| DET["deterministic fallback<br/>scored_by tells the truth"]
+    AI --> POL["policy.shouldRoute()<br/>→ tier · action · reason"]
+    DET --> POL
+    POL --> OUT[("routed_actions row<br/>status=routed")]
+    REAPER["cron */5: reaper"] -.->|"stuck in_flight past TTL<br/>→ pending, re-enqueued"| INBOX
+    DASH["GET /"] -.-> LIVE["dashboard: the state machine, live"]
 ```
 
 ## Try it
